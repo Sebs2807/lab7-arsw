@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { connect, disconnect } from '../services/wsClient.js'
+
 import {
   fetchAuthors,
   fetchByAuthor,
   fetchBlueprint,
+  createBlueprint,
 } from '../features/blueprints/blueprintsSlice.js'
 import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
 
@@ -13,6 +16,16 @@ export default function BlueprintsPage() {
   const [authorInput, setAuthorInput] = useState('')
   const [selectedAuthor, setSelectedAuthor] = useState('')
   const items = byAuthor[selectedAuthor] ?? []
+
+  useEffect(() => {
+    connect((message) => {
+      console.log('WebSocket message received in BlueprintsPage:', message)
+      dispatch(blueprintAddedOrUpdated(payload));
+    })
+    return () => {
+      disconnect()
+    }
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchAuthors())
@@ -31,6 +44,30 @@ export default function BlueprintsPage() {
 
   const openBlueprint = (bp) => {
     dispatch(fetchBlueprint({ author: bp.author, name: bp.name }))
+  }
+
+  const addBlueprint = async () => {
+    // Determine author: prefer selectedAuthor, then authorInput, otherwise ask
+    let author = selectedAuthor || authorInput
+    if (!author) {
+      author = window.prompt('Author for new blueprint:')
+    }
+    if (!author) return
+
+    const name = window.prompt('Name for new blueprint:')
+    if (!name) return
+
+    const payload = { author, name, points: [] }
+    try {
+      await dispatch(createBlueprint(payload)).unwrap()
+      // ensure the UI shows the new author's blueprints and opens the new one
+      setSelectedAuthor(author)
+      dispatch(fetchByAuthor(author))
+      dispatch(fetchBlueprint({ author, name }))
+    } catch (e) {
+      console.error('Failed to create blueprint', e)
+      // optionally show a user-facing message later
+    }
   }
 
   return (
@@ -56,9 +93,20 @@ export default function BlueprintsPage() {
         </div>
 
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>
-            {selectedAuthor ? `${selectedAuthor}'s blueprints:` : 'Results'}
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 style={{ marginTop: 0}}>
+              {selectedAuthor ? (
+                <span style={{ whiteSpace: 'nowrap' }}>
+                  {selectedAuthor + "\u2019s\u00A0Blueprints:"}
+                </span>
+              ) : (
+                'Results'
+              )}
+            </h3>
+            <button className="btn primary" onClick={addBlueprint} style={{width: '20%', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+              Añadir
+            </button>
+          </div>
           {status === 'loading' && <p>Cargando...</p>}
           {!items.length && status !== 'loading' && <p>Sin resultados.</p>}
           {!!items.length && (
@@ -118,7 +166,9 @@ export default function BlueprintsPage() {
       </section>
 
       <section className="card">
-        <h3 style={{ marginTop: 0 }}>Current blueprint: {current?.name || '—'}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ marginTop: 0 }}>Current blueprint: {current?.name || '—'}</h3>
+        </div>
         <BlueprintCanvas points={current?.points || []} />
       </section>
     </div>

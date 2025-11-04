@@ -33,6 +33,12 @@
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
 
+    <!-- Dependencia con stomp para tiempo real -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+
     <!-- Resource Server with JWT validation -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

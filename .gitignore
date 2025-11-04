@@ -1,0 +1,46 @@
+*.class
+*.jar
+*.war
+*.ear
+# Maven
+/target/
+# IDEs
+/.idea/
+/*.iml
+*.classpath
+*.project
+*.settings/
+.vscode/
+*.swp
+# OS
+.DS_Store
+Thumbs.db
+# Build
+/build/
+out/
+# Environment
+.env
+*.local
+# Others
+*.bak
+*.tmp
+# Logs
+/logs/
+*.log
+# Dependency directories
+/node_modules/
+/vendor/
+# Generated files
+/dist/
+/generated/
+# Coverage reports
+/coverage/
+*.lcov
+# Temporary files
+/tmp/
+# Debug files
+*.debug
+# Package files
+*.zip
+*.tar.gz
+*.ra
