@@ -7,6 +7,8 @@ import {
   fetchByAuthor,
   fetchBlueprint,
   createBlueprint,
+  blueprintAddedOrUpdated,
+  addPoint,
 } from '../features/blueprints/blueprintsSlice.js'
 import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
 
@@ -18,14 +20,21 @@ export default function BlueprintsPage() {
   const items = byAuthor[selectedAuthor] ?? []
 
   useEffect(() => {
-    connect((message) => {
-      console.log('WebSocket message received in BlueprintsPage:', message)
-      dispatch(blueprintAddedOrUpdated(payload));
-    })
+    if (!window.stompConnected) {
+      window.stompConnected = true
+
+      connect((message) => {
+        console.log('WebSocket message received in BlueprintsPage:', message)
+        dispatch(blueprintAddedOrUpdated(message))
+      })
+    }
+
     return () => {
       disconnect()
+      window.stompConnected = false
     }
-  }, [dispatch]);
+  }, [dispatch])
+
 
   useEffect(() => {
     dispatch(fetchAuthors())
@@ -46,8 +55,14 @@ export default function BlueprintsPage() {
     dispatch(fetchBlueprint({ author: bp.author, name: bp.name }))
   }
 
+  const handleAddPoint = (p) => {
+    if (!current) return
+    const payload = { author: current.author, name: current.name, point: p }
+    dispatch(addPoint(payload))
+  }
+
+
   const addBlueprint = async () => {
-    // Determine author: prefer selectedAuthor, then authorInput, otherwise ask
     let author = selectedAuthor || authorInput
     if (!author) {
       author = window.prompt('Author for new blueprint:')
@@ -60,13 +75,10 @@ export default function BlueprintsPage() {
     const payload = { author, name, points: [] }
     try {
       await dispatch(createBlueprint(payload)).unwrap()
-      // ensure the UI shows the new author's blueprints and opens the new one
       setSelectedAuthor(author)
-      dispatch(fetchByAuthor(author))
       dispatch(fetchBlueprint({ author, name }))
     } catch (e) {
       console.error('Failed to create blueprint', e)
-      // optionally show a user-facing message later
     }
   }
 
@@ -137,7 +149,7 @@ export default function BlueprintsPage() {
                 </thead>
                 <tbody>
                   {items.map((bp) => (
-                    <tr key={bp.name}>
+                    <tr key={`${bp.author}-${bp.name}`}>
                       <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
                         {bp.name}
                       </td>
@@ -169,7 +181,7 @@ export default function BlueprintsPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 style={{ marginTop: 0 }}>Current blueprint: {current?.name || '—'}</h3>
         </div>
-        <BlueprintCanvas points={current?.points || []} />
+        <BlueprintCanvas points={current?.points || []} onAddPoint={handleAddPoint} />
       </section>
     </div>
   )

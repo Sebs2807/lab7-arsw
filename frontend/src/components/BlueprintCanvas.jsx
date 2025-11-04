@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-export default function BlueprintCanvas({ points = [], width = 520, height = 360 }) {
+export default function BlueprintCanvas({ points = [], width = 520, height = 360, onAddPoint }) {
   const ref = useRef(null)
 
   useEffect(() => {
@@ -29,6 +29,11 @@ export default function BlueprintCanvas({ points = [], width = 520, height = 360
 
     const toCanvasX = (x) => x * zoom + offsetX
     const toCanvasY = (y) => y * zoom + offsetY
+    const toBlueprintX = (x) => (x - offsetX) / zoom
+    const toBlueprintY = (y) => (y - offsetY) / zoom
+
+    canvas.toBlueprintX = toBlueprintX
+    canvas.toBlueprintY = toBlueprintY
 
     ctx.strokeStyle = 'rgba(148,163,184,0.15)'
     ctx.lineWidth = 1
@@ -65,17 +70,30 @@ export default function BlueprintCanvas({ points = [], width = 520, height = 360
     }
   }, [points])
 
+  const handleClick = (e) => {
+    if (!onAddPoint) return
+    const canvas = ref.current
+    const rect = canvas.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const bpX = canvas.toBlueprintX(x)
+    const bpY = canvas.toBlueprintY(y)
+    onAddPoint({ x: bpX, y: bpY })
+  }
+
   return (
     <canvas
       ref={ref}
       width={width}
       height={height}
+      onClick={handleClick}
       style={{
         background: '#0b1220',
         border: '1px solid #334155',
         borderRadius: 12,
         width: '100%',
         maxWidth: width,
+        cursor: 'crosshair',
       }}
     />
   )

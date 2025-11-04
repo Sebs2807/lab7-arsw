@@ -43,7 +43,22 @@ const slice = createSlice({
     status: 'idle',
     error: null,
   },
-  reducers: {},
+  reducers: {
+    blueprintAddedOrUpdated: (state, action) => {
+      const bp = action.payload
+      if (!bp || !bp.author || !bp.name) return
+      const currentList = state.byAuthor[bp.author] || []
+      const existingIndex = currentList.findIndex((b) => b.name === bp.name)
+      let updatedList = [...currentList]
+      if (existingIndex !== -1) {
+        updatedList[existingIndex] = bp
+      } else {
+        updatedList.push(bp)
+      }
+
+      state.byAuthor[bp.author] = updatedList
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchAuthors.pending, (s) => {
@@ -74,13 +89,9 @@ const slice = createSlice({
           if (bp) bp.points.push(point)
         }
       })
-
-      .addCase(createBlueprint.fulfilled, (s, a) => {
-        const bp = a.payload
-        if (s.byAuthor[bp.author]) s.byAuthor[bp.author].push(bp)
-        else s.byAuthor[bp.author] = [bp]
-      })
-  },
+  },  
 })
 
 export default slice.reducer
+
+export const { blueprintAddedOrUpdated } = slice.actions

@@ -13,10 +13,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import co.edu.eci.blueprints.services.BlueprintBroadcastService;
 import co.edu.eci.blueprints.services.BlueprintsServices;
 import co.edu.eci.blueprints.dto.ApiResponse;
 import co.edu.eci.blueprints.model.*;
 import co.edu.eci.blueprints.persistence.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Set;
@@ -27,8 +29,12 @@ import java.util.Set;
 public class BlueprintsAPIController {
 
     private final BlueprintsServices services;
+    private final BlueprintBroadcastService broadcastService;
 
-    public BlueprintsAPIController(BlueprintsServices services) { this.services = services; }
+    public BlueprintsAPIController(BlueprintsServices services, BlueprintBroadcastService broadcastService) {
+        this.services = services;
+        this.broadcastService = broadcastService;
+    }
 
     // GET /api/v1/blueprints
         @GetMapping
@@ -66,6 +72,12 @@ public class BlueprintsAPIController {
         try {
             Blueprint bp = new Blueprint(req.author(), req.name(), req.points());
             services.addNewBlueprint(bp);
+            // Notify subscribed clients about the new blueprint
+            try {
+                broadcastService.sendBlueprintUpdate(bp);
+            } catch (Exception ex) {
+                System.err.println("Failed to send STOMP message: " + ex.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(201, "Created", bp));
         } catch (BlueprintPersistenceException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(400, e.getMessage(), null));
@@ -78,6 +90,7 @@ public class BlueprintsAPIController {
         public ResponseEntity<ApiResponse<?>> addPoint(@PathVariable String author, @PathVariable String bpname,@RequestBody Point p) {
         try {
             services.addPoint(author, bpname, p.x(), p.y());
+            broadcastService.sendBlueprintUpdate(services.getBlueprint(author, bpname));
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(new ApiResponse<>(202, "Accepted", null));
         } catch (BlueprintNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(404, e.getMessage(), null));

@@ -29,6 +29,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/actuator/**", "/auth/login").permitAll()
+                    .requestMatchers("/ws-blueprints/**").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     .requestMatchers("/api/v1/blueprints").hasAnyAuthority("SCOPE_blueprints.read", "SCOPE_blueprints.write")
                     .requestMatchers("/api/v1/blueprints/{author}").hasAnyAuthority("SCOPE_blueprints.read", "SCOPE_blueprints.write")
