@@ -1,0 +1,27 @@
+# Maven
+/target/
+
+# IDEs
+/.idea/
+/*.iml
+*.classpath
+*.project
+*.settings/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+/build/
+out/
+
+# Environment
+.env
+*.local
+
+# Others
+*.bak
+*.tmp
