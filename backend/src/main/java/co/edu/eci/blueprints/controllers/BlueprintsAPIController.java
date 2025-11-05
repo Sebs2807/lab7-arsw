@@ -1,6 +1,5 @@
 package co.edu.eci.blueprints.controllers;
 
-
 // import co.edu.eci.arsw.blueprints.dto.ApiResponse;
 // import edu.eci.arsw.blueprints.model.Blueprint;
 // import edu.eci.arsw.blueprints.model.Point;
@@ -37,16 +36,16 @@ public class BlueprintsAPIController {
     }
 
     // GET /api/v1/blueprints
-        @GetMapping
-        @PreAuthorize("hasAuthority('SCOPE_blueprints.read')")
-        public ResponseEntity<ApiResponse<Set<Blueprint>>> getAll() {
+    @GetMapping
+    @PreAuthorize("hasAuthority('SCOPE_blueprints.read')")
+    public ResponseEntity<ApiResponse<Set<Blueprint>>> getAll() {
         return ResponseEntity.ok(new ApiResponse<>(200, "OK", services.getAllBlueprints()));
     }
 
     // GET /api/v1/blueprints/{author}
-        @GetMapping("/{author}")
-        @PreAuthorize("hasAuthority('SCOPE_blueprints.read')")
-        public ResponseEntity<ApiResponse<?>> byAuthor(@PathVariable String author) {
+    @GetMapping("/{author}")
+    @PreAuthorize("hasAuthority('SCOPE_blueprints.read')")
+    public ResponseEntity<ApiResponse<?>> byAuthor(@PathVariable String author) {
         try {
             return ResponseEntity.ok(new ApiResponse<>(200, "OK", services.getBlueprintsByAuthor(author)));
         } catch (BlueprintNotFoundException e) {
@@ -55,20 +54,20 @@ public class BlueprintsAPIController {
     }
 
     // GET /api/v1/blueprints/{author}/{bpname}
-        @GetMapping("/{author}/{bpname}")
-        @PreAuthorize("hasAuthority('SCOPE_blueprints.read')")
-        public ResponseEntity<ApiResponse<?>> byAuthorAndName(@PathVariable String author, @PathVariable String bpname) {
+    @GetMapping("/{author}/{bpname}")
+    @PreAuthorize("hasAuthority('SCOPE_blueprints.read')")
+    public ResponseEntity<ApiResponse<?>> byAuthorAndName(@PathVariable String author, @PathVariable String bpname) {
         try {
-            return ResponseEntity.ok(new ApiResponse<>(200, "OK",services.getBlueprint(author, bpname)));
+            return ResponseEntity.ok(new ApiResponse<>(200, "OK", services.getBlueprint(author, bpname)));
         } catch (BlueprintNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(404, e.getMessage(), null));
         }
     }
 
     // POST /api/v1/blueprints
-        @PostMapping
-        @PreAuthorize("hasAuthority('SCOPE_blueprints.write')")
-        public ResponseEntity<ApiResponse<?>> add(@Valid @RequestBody NewBlueprintRequest req) {
+    @PostMapping
+    @PreAuthorize("hasAuthority('SCOPE_blueprints.write')")
+    public ResponseEntity<ApiResponse<?>> add(@Valid @RequestBody NewBlueprintRequest req) {
         try {
             Blueprint bp = new Blueprint(req.author(), req.name(), req.points());
             services.addNewBlueprint(bp);
@@ -85,9 +84,10 @@ public class BlueprintsAPIController {
     }
 
     // PUT /api/v1/blueprints/{author}/{bpname}/points
-        @PutMapping("/{author}/{bpname}/points")
-        @PreAuthorize("hasAuthority('SCOPE_blueprints.write')")
-        public ResponseEntity<ApiResponse<?>> addPoint(@PathVariable String author, @PathVariable String bpname,@RequestBody Point p) {
+    @PutMapping("/{author}/{bpname}/points")
+    @PreAuthorize("hasAuthority('SCOPE_blueprints.write')")
+    public ResponseEntity<ApiResponse<?>> addPoint(@PathVariable String author, @PathVariable String bpname,
+            @RequestBody Point p) {
         try {
             services.addPoint(author, bpname, p.x(), p.y());
             broadcastService.sendBlueprintUpdate(services.getBlueprint(author, bpname));
@@ -100,6 +100,6 @@ public class BlueprintsAPIController {
     public record NewBlueprintRequest(
             @NotBlank String author,
             @NotBlank String name,
-            @Valid java.util.List<Point> points
-    ) { }
+            @Valid java.util.List<Point> points) {
+    }
 }

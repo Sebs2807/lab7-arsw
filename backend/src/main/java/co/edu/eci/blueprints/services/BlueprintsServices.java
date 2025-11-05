@@ -25,11 +25,17 @@ public class BlueprintsServices {
     }
 
     public Set<Blueprint> getAllBlueprints() {
-        return persistence.getAllBlueprints();
+        // Aplicar el mismo filtro a cada blueprint para mantener consistencia
+        return persistence.getAllBlueprints().stream()
+                .map(filter::apply)
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     public Set<Blueprint> getBlueprintsByAuthor(String author) throws BlueprintNotFoundException {
-        return persistence.getBlueprintsByAuthor(author);
+        // Aplicar filtro a cada blueprint del autor para que la vista de lista coincida
+        return persistence.getBlueprintsByAuthor(author).stream()
+                .map(filter::apply)
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     public Blueprint getBlueprint(String author, String name) throws BlueprintNotFoundException {

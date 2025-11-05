@@ -1,3 +1,4 @@
+import { addPoint } from '../features/blueprints/blueprintsSlice.js'
 import api from './apiClient.js'
 
 export default {
@@ -18,6 +19,11 @@ export default {
 
   create: async (blueprint) => {
     const { data } = await api.post('/api/v1/blueprints', blueprint)
+    return data.data || data
+  },
+
+  addPoint: async ({ author, name, point }) => {
+    const { data } = await api.put(`/api/v1/blueprints/${author}/${name}/points`, point)
     return data.data || data
   },
 }

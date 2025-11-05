@@ -20,14 +20,21 @@ export const fetchBlueprint = createAsyncThunk(
   },
 )
 
-export const addPoint = createAsyncThunk('blueprints/addPoint', async ({ author, name, point }) => {
-  if (typeof blueprintsService.addPoint === 'function') {
-    return blueprintsService.addPoint({ author, name, point })
-  }
+export const addPoint = createAsyncThunk(
+  'blueprints/addPoint',
+  async ({ author, name, point }, thunkAPI) => {
+    // Ejecuta la operación de agregar punto en el servicio
+    if (typeof blueprintsService.addPoint === 'function') {
+      await blueprintsService.addPoint({ author, name, point })
+      // Luego solicitamos el blueprint actualizado para mantener consistencia
+      const blueprint = await blueprintsService.getByAuthorAndName(author, name)
+      return blueprint
+    }
 
-  const blueprint = await blueprintsService.addPoint({ author, name, point })
-  return blueprint
-})
+    const blueprint = await blueprintsService.addPoint({ author, name, point })
+    return blueprint
+  },
+)
 
 export const createBlueprint = createAsyncThunk('blueprints/createBlueprint', async (payload) => {
   const blueprint = await blueprintsService.create(payload)
@@ -57,6 +64,10 @@ const slice = createSlice({
       }
 
       state.byAuthor[bp.author] = updatedList
+      // If the updated blueprint is the one currently open, replace current so canvases update in real-time
+      if (state.current && state.current.author === bp.author && state.current.name === bp.name) {
+        state.current = bp
+      }
     },
   },
   extraReducers: (builder) => {
@@ -77,16 +88,34 @@ const slice = createSlice({
         s.byAuthor[a.payload.author] = a.payload.items
       })
 
+      // Allow immediate interactions: when a blueprint fetch is started, set a skeleton current so clicks
+      // on the canvas can enqueue points even before the full blueprint arrives.
+      .addCase(fetchBlueprint.pending, (s, a) => {
+        const { author, name } = a.meta.arg
+        s.current = { author, name, points: s.byAuthor[author]?.find((b) => b.name === name)?.points || [] }
+      })
+
       .addCase(fetchBlueprint.fulfilled, (s, a) => {
         s.current = a.payload
       })
 
+      // Note: we avoid optimistic mutation here to prevent transient "+1 then -1" flashes.
       .addCase(addPoint.fulfilled, (s, a) => {
-        const { author, name, point } = a.payload
-        const bpList = s.byAuthor[author]
-        if (bpList) {
-          const bp = bpList.find((b) => b.name === name)
-          if (bp) bp.points.push(point)
+        const bp = a.payload
+        if (!bp || !bp.author || !bp.name) return
+        const currentList = s.byAuthor[bp.author] || []
+        const existingIndex = currentList.findIndex((b) => b.name === bp.name)
+        let updatedList = [...currentList]
+        if (existingIndex !== -1) {
+          updatedList[existingIndex] = bp
+        } else {
+          updatedList.push(bp)
+        }
+        s.byAuthor[bp.author] = updatedList
+
+        // Reemplazamos current si corresponde con la versión del servidor
+        if (s.current && s.current.author === bp.author && s.current.name === bp.name) {
+          s.current = bp
         }
       })
   },  
