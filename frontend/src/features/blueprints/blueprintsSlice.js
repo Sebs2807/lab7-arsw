@@ -92,7 +92,11 @@ const slice = createSlice({
       // on the canvas can enqueue points even before the full blueprint arrives.
       .addCase(fetchBlueprint.pending, (s, a) => {
         const { author, name } = a.meta.arg
-        s.current = { author, name, points: s.byAuthor[author]?.find((b) => b.name === name)?.points || [] }
+        s.current = {
+          author,
+          name,
+          points: s.byAuthor[author]?.find((b) => b.name === name)?.points || [],
+        }
       })
 
       .addCase(fetchBlueprint.fulfilled, (s, a) => {
@@ -118,7 +122,7 @@ const slice = createSlice({
           s.current = bp
         }
       })
-  },  
+  },
 })
 
 export default slice.reducer
