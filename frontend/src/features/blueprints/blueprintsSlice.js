@@ -23,10 +23,8 @@ export const fetchBlueprint = createAsyncThunk(
 export const addPoint = createAsyncThunk(
   'blueprints/addPoint',
   async ({ author, name, point }, thunkAPI) => {
-    // Ejecuta la operación de agregar punto en el servicio
     if (typeof blueprintsService.addPoint === 'function') {
       await blueprintsService.addPoint({ author, name, point })
-      // Luego solicitamos el blueprint actualizado para mantener consistencia
       const blueprint = await blueprintsService.getByAuthorAndName(author, name)
       return blueprint
     }
@@ -64,7 +62,6 @@ const slice = createSlice({
       }
 
       state.byAuthor[bp.author] = updatedList
-      // If the updated blueprint is the one currently open, replace current so canvases update in real-time
       if (state.current && state.current.author === bp.author && state.current.name === bp.name) {
         state.current = bp
       }
@@ -88,8 +85,6 @@ const slice = createSlice({
         s.byAuthor[a.payload.author] = a.payload.items
       })
 
-      // Allow immediate interactions: when a blueprint fetch is started, set a skeleton current so clicks
-      // on the canvas can enqueue points even before the full blueprint arrives.
       .addCase(fetchBlueprint.pending, (s, a) => {
         const { author, name } = a.meta.arg
         s.current = {
@@ -103,7 +98,6 @@ const slice = createSlice({
         s.current = a.payload
       })
 
-      // Note: we avoid optimistic mutation here to prevent transient "+1 then -1" flashes.
       .addCase(addPoint.fulfilled, (s, a) => {
         const bp = a.payload
         if (!bp || !bp.author || !bp.name) return
@@ -117,7 +111,6 @@ const slice = createSlice({
         }
         s.byAuthor[bp.author] = updatedList
 
-        // Reemplazamos current si corresponde con la versión del servidor
         if (s.current && s.current.author === bp.author && s.current.name === bp.name) {
           s.current = bp
         }

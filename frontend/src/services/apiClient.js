@@ -17,7 +17,6 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response && err.response.status === 401) {
-      // Optionally redirect to login or clear token
       localStorage.removeItem('token')
     }
     return Promise.reject(err)

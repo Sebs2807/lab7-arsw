@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Profile;
 
 /**
- * Default filter: returns the blueprint unchanged.
- * This matches the baseline behavior of the reference lab before students implement custom filters.
+ * Filtro por defecto
+ * Este filtro devuelve el blueprint sin cambios.
  */
 @Component
 @Profile("identity")

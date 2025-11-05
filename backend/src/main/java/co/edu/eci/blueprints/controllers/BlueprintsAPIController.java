@@ -17,7 +17,6 @@ import co.edu.eci.blueprints.services.BlueprintsServices;
 import co.edu.eci.blueprints.dto.ApiResponse;
 import co.edu.eci.blueprints.model.*;
 import co.edu.eci.blueprints.persistence.*;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Set;

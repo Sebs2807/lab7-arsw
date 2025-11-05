@@ -25,14 +25,12 @@ public class BlueprintsServices {
     }
 
     public Set<Blueprint> getAllBlueprints() {
-        // Aplicar el mismo filtro a cada blueprint para mantener consistencia
         return persistence.getAllBlueprints().stream()
                 .map(filter::apply)
                 .collect(java.util.stream.Collectors.toSet());
     }
 
     public Set<Blueprint> getBlueprintsByAuthor(String author) throws BlueprintNotFoundException {
-        // Aplicar filtro a cada blueprint del autor para que la vista de lista coincida
         return persistence.getBlueprintsByAuthor(author).stream()
                 .map(filter::apply)
                 .collect(java.util.stream.Collectors.toSet());

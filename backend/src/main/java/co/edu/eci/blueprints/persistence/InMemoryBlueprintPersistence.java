@@ -14,7 +14,6 @@ public class InMemoryBlueprintPersistence implements BlueprintPersistence {
     private final Map<String, Blueprint> blueprints = new ConcurrentHashMap<>();
 
     public InMemoryBlueprintPersistence() {
-        // Sample data 1:1 style (author/name key)
         Blueprint bp1 = new Blueprint("john", "house",
                 List.of(new Point(0,0), new Point(10,0), new Point(10,10), new Point(0,10)));
         Blueprint bp2 = new Blueprint("john", "garage",

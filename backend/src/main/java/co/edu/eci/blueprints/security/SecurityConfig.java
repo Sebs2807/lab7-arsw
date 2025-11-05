@@ -41,10 +41,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * CORS configuration for development: allows the frontend origin to call the API.
-     * Adjust or restrict origins for production.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
