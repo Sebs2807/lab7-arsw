@@ -14,4 +14,8 @@ public interface BlueprintPersistence {
     Set<Blueprint> getAllBlueprints();
 
     void addPoint(String author, String name, int x, int y) throws BlueprintNotFoundException;
+
+    void removeBlueprint(String author, String name) throws BlueprintNotFoundException;
+
+    void updateBlueprint(String author, String name, Blueprint bp) throws BlueprintNotFoundException, BlueprintPersistenceException;
 }

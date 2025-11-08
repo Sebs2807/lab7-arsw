@@ -26,4 +26,14 @@ export default {
     const { data } = await api.put(`/api/v1/blueprints/${author}/${name}/points`, point)
     return data.data || data
   },
+
+  delete: async ({ author, name }) => {
+    const { data } = await api.delete(`/api/v1/blueprints/${author}/${name}`)
+    return data.data || data
+  },
+
+  update: async ({ author, name, blueprint }) => {
+    const { data } = await api.put(`/api/v1/blueprints/${author}/${name}`, blueprint)
+    return data.data || data
+  },
 }

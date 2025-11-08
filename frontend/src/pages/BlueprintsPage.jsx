@@ -9,8 +9,12 @@ import {
   createBlueprint,
   blueprintAddedOrUpdated,
   addPoint,
+  deleteBlueprint,
+  updateBlueprint,
+  blueprintRemoved,
 } from '../features/blueprints/blueprintsSlice.js'
 import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
+import { FaTrash, FaPencilAlt, FaPlus } from 'react-icons/fa'
 
 export default function BlueprintsPage() {
   const dispatch = useDispatch()
@@ -25,7 +29,11 @@ export default function BlueprintsPage() {
 
       connect((message) => {
         console.log('WebSocket message received in BlueprintsPage:', message)
-        dispatch(blueprintAddedOrUpdated(message))
+        if (message && message.action === 'delete') {
+          dispatch(blueprintRemoved({ author: message.author, name: message.name }))
+        } else {
+          dispatch(blueprintAddedOrUpdated(message))
+        }
       })
     }
 
@@ -49,6 +57,38 @@ export default function BlueprintsPage() {
     if (!authorInput) return
     setSelectedAuthor(authorInput)
     dispatch(fetchByAuthor(authorInput))
+  }
+
+  const handleDelete = async (bp) => {
+    if (!bp) return
+    const ok = window.confirm(`Eliminar blueprint "${bp.name}" de ${bp.author}?`)
+    if (!ok) return
+    try {
+      await dispatch(deleteBlueprint({ author: bp.author, name: bp.name })).unwrap()
+      dispatch(fetchByAuthor(selectedAuthor || bp.author))
+      if (current && current.author === bp.author && current.name === bp.name) {
+        try { await dispatch(fetchBlueprint({ author: bp.author, name: '' })) } catch (e) {}
+      }
+    } catch (e) {
+      console.error('Failed to delete blueprint', e)
+      window.alert('Failed to delete blueprint: ' + (e.message || e))
+    }
+  }
+
+  const handleEdit = async (bp) => {
+    if (!bp) return
+    const newName = window.prompt('New name for blueprint:', bp.name)
+    if (!newName || newName === bp.name) return
+    const updatedBp = { ...bp, name: newName }
+    try {
+      const res = await dispatch(updateBlueprint({ author: bp.author, name: bp.name, blueprint: updatedBp })).unwrap()
+      setSelectedAuthor(res.author)
+      dispatch(fetchByAuthor(res.author))
+      dispatch(fetchBlueprint({ author: res.author, name: res.name }))
+    } catch (e) {
+      console.error('Failed to update blueprint', e)
+      window.alert('Failed to update blueprint: ' + (e.message || e))
+    }
   }
 
   const openBlueprint = (bp) => {
@@ -115,8 +155,14 @@ export default function BlueprintsPage() {
                 'Results'
               )}
             </h3>
-            <button className="btn primary" onClick={addBlueprint} style={{width: '20%', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-              Añadir
+            <button
+              className="btn primary"
+              onClick={addBlueprint}
+              title="Añadir blueprint"
+              aria-label="Añadir blueprint"
+              style={{ width: '20%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            >
+              <FaPlus />
             </button>
           </div>
           {status === 'loading' && <p>Cargando...</p>}
@@ -162,9 +208,15 @@ export default function BlueprintsPage() {
                       >
                         {bp.points?.length || 0}
                       </td>
-                      <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
-                        <button className="btn" onClick={() => openBlueprint(bp)}>
+                      <td style={{ padding: '8px', borderBottom: '1px solid #1f2937', display: 'flex', gap: 8 }}>
+                        <button className="btn" onClick={() => openBlueprint(bp)} title="Open blueprint" aria-label={`Open ${bp.name}`}>
                           Open
+                        </button>
+                        <button className="btn" onClick={() => handleEdit(bp)} title="Editar blueprint" aria-label={`Editar ${bp.name}`}>
+                          <FaPencilAlt />
+                        </button>
+                        <button className="btn danger" onClick={() => handleDelete(bp)} title="Eliminar blueprint" aria-label={`Eliminar ${bp.name}`}>
+                          <FaTrash />
                         </button>
                       </td>
                     </tr>

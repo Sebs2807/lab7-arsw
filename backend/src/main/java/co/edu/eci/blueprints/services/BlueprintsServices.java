@@ -43,4 +43,12 @@ public class BlueprintsServices {
     public void addPoint(String author, String name, int x, int y) throws BlueprintNotFoundException {
         persistence.addPoint(author, name, x, y);
     }
+
+    public void removeBlueprint(String author, String name) throws BlueprintNotFoundException {
+        persistence.removeBlueprint(author, name);
+    }
+
+    public void updateBlueprint(String author, String name, Blueprint bp) throws BlueprintNotFoundException, BlueprintPersistenceException {
+        persistence.updateBlueprint(author, name, bp);
+    }
 }

@@ -1,11 +1,4 @@
 package co.edu.eci.blueprints.controllers;
-
-// import co.edu.eci.arsw.blueprints.dto.ApiResponse;
-// import edu.eci.arsw.blueprints.model.Blueprint;
-// import edu.eci.arsw.blueprints.model.Point;
-// import edu.eci.arsw.blueprints.persistence.BlueprintNotFoundException;
-// import edu.eci.arsw.blueprints.persistence.BlueprintPersistenceException;
-// import edu.eci.arsw.blueprints.services.BlueprintsServices;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
@@ -70,7 +63,6 @@ public class BlueprintsAPIController {
         try {
             Blueprint bp = new Blueprint(req.author(), req.name(), req.points());
             services.addNewBlueprint(bp);
-            // Notify subscribed clients about the new blueprint
             try {
                 broadcastService.sendBlueprintUpdate(bp);
             } catch (Exception ex) {
@@ -91,6 +83,56 @@ public class BlueprintsAPIController {
             services.addPoint(author, bpname, p.x(), p.y());
             broadcastService.sendBlueprintUpdate(services.getBlueprint(author, bpname));
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(new ApiResponse<>(202, "Accepted", null));
+        } catch (BlueprintNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(404, e.getMessage(), null));
+        }
+    }
+
+    // PUT /api/v1/blueprints/{author}/{bpname}  - update (rename or replace) blueprint
+    @PutMapping("/{author}/{bpname}")
+    @PreAuthorize("hasAuthority('SCOPE_blueprints.write')")
+    public ResponseEntity<ApiResponse<?>> updateBlueprint(@PathVariable String author, @PathVariable String bpname,
+            @Valid @RequestBody NewBlueprintRequest req) {
+        try {
+            Blueprint newBp = new Blueprint(req.author(), req.name(), req.points());
+            services.updateBlueprint(author, bpname, newBp);
+            // If the update involved a rename (author or name changed), notify clients to remove the old key
+            try {
+                if (!author.equals(newBp.getAuthor()) || !bpname.equals(newBp.getName())) {
+                    // notify deletion of old blueprint first so clients remove the old entry
+                    try {
+                        broadcastService.sendBlueprintDelete(author, bpname);
+                    } catch (Exception ex) {
+                        System.err.println("Failed to send STOMP delete message for rename: " + ex.getMessage());
+                    }
+                }
+                // Notify subscribed clients about the updated blueprint
+                broadcastService.sendBlueprintUpdate(services.getBlueprint(newBp.getAuthor(), newBp.getName()));
+            } catch (Exception ex) {
+                System.err.println("Failed to send STOMP message: " + ex.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(new ApiResponse<>(202, "Accepted", services.getBlueprint(newBp.getAuthor(), newBp.getName())));
+        } catch (BlueprintNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(404, e.getMessage(), null));
+        } catch (BlueprintPersistenceException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(400, e.getMessage(), null));
+        }
+    }
+
+    // DELETE /api/v1/blueprints/{author}/{bpname}  - delete blueprint
+    @DeleteMapping("/{author}/{bpname}")
+    @PreAuthorize("hasAuthority('SCOPE_blueprints.write')")
+    public ResponseEntity<ApiResponse<?>> deleteBlueprint(@PathVariable String author, @PathVariable String bpname) {
+        try {
+            services.removeBlueprint(author, bpname);
+            // notify subscribers about deletion
+            try {
+                broadcastService.sendBlueprintDelete(author, bpname);
+            } catch (Exception ex) {
+                System.err.println("Failed to send STOMP delete message: " + ex.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new ApiResponse<>(204, "Deleted", null));
         } catch (BlueprintNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(404, e.getMessage(), null));
         }

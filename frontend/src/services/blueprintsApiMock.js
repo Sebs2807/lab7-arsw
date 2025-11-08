@@ -46,4 +46,20 @@ export default {
     mockData.push(blueprint)
     return blueprint
   },
+
+  delete: async ({ author, name }) => {
+    const idx = mockData.findIndex((b) => b.author === author && b.name === name)
+    if (idx === -1) throw new Error('Blueprint not found')
+    const [removed] = mockData.splice(idx, 1)
+    return removed
+  },
+
+  update: async ({ author, name, blueprint }) => {
+    const bp = mockData.find((b) => b.author === author && b.name === name)
+    if (!bp) throw new Error('Blueprint not found')
+    bp.name = blueprint.name ?? bp.name
+    bp.points = blueprint.points ?? bp.points
+    bp.author = blueprint.author ?? bp.author
+    return bp
+  },
 }

@@ -39,6 +39,28 @@ export const createBlueprint = createAsyncThunk('blueprints/createBlueprint', as
   return blueprint
 })
 
+export const deleteBlueprint = createAsyncThunk(
+  'blueprints/deleteBlueprint',
+  async ({ author, name }, thunkAPI) => {
+    if (typeof blueprintsService.delete !== 'function') {
+      throw new Error('Delete not supported by service')
+    }
+    await blueprintsService.delete({ author, name })
+    return { author, name }
+  },
+)
+
+export const updateBlueprint = createAsyncThunk(
+  'blueprints/updateBlueprint',
+  async ({ author, name, blueprint }, thunkAPI) => {
+    if (typeof blueprintsService.update !== 'function') {
+      throw new Error('Update not supported by service')
+    }
+    const updated = await blueprintsService.update({ author, name, blueprint })
+    return updated
+  },
+)
+
 const slice = createSlice({
   name: 'blueprints',
   initialState: {
@@ -64,6 +86,15 @@ const slice = createSlice({
       state.byAuthor[bp.author] = updatedList
       if (state.current && state.current.author === bp.author && state.current.name === bp.name) {
         state.current = bp
+      }
+    },
+    blueprintRemoved: (state, action) => {
+      const { author, name } = action.payload || {}
+      if (!author || !name) return
+      const list = state.byAuthor[author] || []
+      state.byAuthor[author] = list.filter((b) => b.name !== name)
+      if (state.current && state.current.author === author && state.current.name === name) {
+        state.current = null
       }
     },
   },
@@ -115,9 +146,34 @@ const slice = createSlice({
           s.current = bp
         }
       })
+      .addCase(deleteBlueprint.fulfilled, (s, a) => {
+        const { author, name } = a.payload
+        const list = s.byAuthor[author] || []
+        s.byAuthor[author] = list.filter((b) => b.name !== name)
+        if (s.current && s.current.author === author && s.current.name === name) {
+          s.current = null
+        }
+      })
+
+      .addCase(updateBlueprint.fulfilled, (s, a) => {
+        const bp = a.payload
+        if (!bp || !bp.author || !bp.name) return
+        const currentList = s.byAuthor[bp.author] || []
+        const existingIndex = currentList.findIndex((b) => b.name === bp.name)
+        let updatedList = [...currentList]
+        if (existingIndex !== -1) {
+          updatedList[existingIndex] = bp
+        } else {
+          updatedList.push(bp)
+        }
+        s.byAuthor[bp.author] = updatedList
+        if (s.current && s.current.author === bp.author && s.current.name === bp.name) {
+          s.current = bp
+        }
+      })
   },
 })
 
 export default slice.reducer
 
-export const { blueprintAddedOrUpdated } = slice.actions
+export const { blueprintAddedOrUpdated, blueprintRemoved } = slice.actions
