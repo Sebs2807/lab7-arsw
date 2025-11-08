@@ -96,17 +96,14 @@ public class BlueprintsAPIController {
         try {
             Blueprint newBp = new Blueprint(req.author(), req.name(), req.points());
             services.updateBlueprint(author, bpname, newBp);
-            // If the update involved a rename (author or name changed), notify clients to remove the old key
             try {
                 if (!author.equals(newBp.getAuthor()) || !bpname.equals(newBp.getName())) {
-                    // notify deletion of old blueprint first so clients remove the old entry
                     try {
                         broadcastService.sendBlueprintDelete(author, bpname);
                     } catch (Exception ex) {
                         System.err.println("Failed to send STOMP delete message for rename: " + ex.getMessage());
                     }
                 }
-                // Notify subscribed clients about the updated blueprint
                 broadcastService.sendBlueprintUpdate(services.getBlueprint(newBp.getAuthor(), newBp.getName()));
             } catch (Exception ex) {
                 System.err.println("Failed to send STOMP message: " + ex.getMessage());
@@ -126,7 +123,6 @@ public class BlueprintsAPIController {
     public ResponseEntity<ApiResponse<?>> deleteBlueprint(@PathVariable String author, @PathVariable String bpname) {
         try {
             services.removeBlueprint(author, bpname);
-            // notify subscribers about deletion
             try {
                 broadcastService.sendBlueprintDelete(author, bpname);
             } catch (Exception ex) {
